@@ -11,19 +11,24 @@ import (
 	"github.com/gotokatsuya/particle"
 )
 
+// 点(x,y)
 type point struct {
 	x int
 	y int
 }
 
+// (w, h)からなる範囲を初期化する
+// 物体の位置を mx, my に従って移動させる
 func makeField(w, h, mx, my int) (map[point]int, []point) {
-	field := map[point]int{}
-	targetPoints := []point{}
+	var (
+		field        = map[point]int{}
+		targetPoints = []point{}
 
-	length := 10
+		length = 10
 
-	maxX := length + mx
-	maxY := length + my
+		maxX = length + mx
+		maxY = length + my
+	)
 
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
@@ -44,6 +49,7 @@ func makeField(w, h, mx, my int) (map[point]int, []point) {
 	return field, targetPoints
 }
 
+// 点をプロットしてグラフを作成する
 func drawPlot(title string, ps []point) {
 	p, err := plot.New()
 	if err != nil {
@@ -84,22 +90,22 @@ func main() {
 	var (
 		particlePoints = []point{}
 
-		number    = 800
+		number    = 1000
 		dimension = 4
 
 		upper = []int{width, height, 10, 10}
 		lower = []int{0, 0, -10, -10}
 		noise = []int{30, 30, 10, 10}
+
+		f = particle.NewParticleFilter(number, dimension, upper, lower, noise)
 	)
 
-	f := particle.NewParticleFilter(number, dimension, upper, lower, noise)
-
-	for i := 0; i < 380; i++ {
+	for i := 0; i < 720; i++ {
 
 		f.Resample()
 
 		f.Predict(func(j int, noises []int) particle.Particle {
-			// uniform linear motion
+			// 等速直線運動
 			f.Particles[j].X[0] += f.Particles[j].X[2] + noises[0]
 			f.Particles[j].X[1] += f.Particles[j].X[3] + noises[1]
 			f.Particles[j].X[2] += noises[2]
@@ -108,6 +114,7 @@ func main() {
 		})
 
 		f.Weight(func(j int) particle.Particle {
+			// 尤度計算
 			x := f.Particles[j].X[0]
 			y := f.Particles[j].X[1]
 			if v, ok := src[point{x, y}]; ok {
@@ -124,8 +131,11 @@ func main() {
 		particlePoints = append(particlePoints, point{res.X[0], res.X[1]})
 
 		// target moves
-		mx++
-		my++
+		if i >= 380 {
+			my++
+		} else {
+			mx++
+		}
 		src, currentTargetPoints = makeField(width, height, mx, my)
 		targets = append(targets, currentTargetPoints...)
 	}
